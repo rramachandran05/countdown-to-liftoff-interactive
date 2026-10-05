@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdown to Liftoff — Mission Control</title>
+<meta name="description" content="Countdown to Liftoff: A Template for a Successful Life. Based on NASA's principles of managing missions. By Dr. Rahul Ramachandran.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04070f;
+  --panel:rgba(13,20,38,.72);
+  --line:rgba(103,232,249,.18);
+  --line-strong:rgba(103,232,249,.45);
+  --cyan:#67e8f9;
+  --green:#34d399;
+  --amber:#fbbf24;
+  --red:#f87171;
+  --violet:#a78bfa;
+  --ink:#dbe7ff;
+  --dim:#7f93b8;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Space Grotesk',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);overflow-x:hidden;line-height:1.55}
+::selection{background:rgba(103,232,249,.3)}
+
+/* ---------- backdrop ---------- */
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+.scanlines{position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.10) 2px 4px);mix-blend-mode:overlay}
+.vignette{position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 40%,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+/* ---------- boot ---------- */
+#boot{position:fixed;inset:0;z-index:100;background:#02040a;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-family:var(--mono);transition:opacity .9s,visibility .9s}
+#boot.gone{opacity:0;visibility:hidden}
+#bootLog{width:min(560px,88vw);font-size:clamp(11px,1.5vw,13px);color:var(--green);min-height:10em;
+  text-shadow:0 0 8px rgba(52,211,153,.5)}
+#bootLog .amber{color:var(--amber)} #bootLog .cyan{color:var(--cyan)}
+#bootTitle{margin-top:24px;text-align:center;opacity:0;transform:translateY(12px);transition:all 1.2s cubic-bezier(.2,.8,.2,1)}
+#bootTitle.show{opacity:1;transform:none}
+#bootTitle h1{font-family:var(--sans);font-weight:700;letter-spacing:.06em;font-size:clamp(26px,5vw,50px);color:#fff}
+#bootTitle h1 span{color:var(--cyan)}
+#bootTitle p{color:var(--dim);letter-spacing:.35em;font-size:clamp(9px,1.4vw,11px);text-transform:uppercase;margin-top:8px}
+#initBtn{margin-top:30px;opacity:0;transition:opacity 1s .4s;font-family:var(--mono);font-size:13px;
+  letter-spacing:.25em;background:transparent;color:var(--cyan);border:1px solid var(--cyan);
+  padding:15px 32px;cursor:pointer;position:relative;text-transform:uppercase}
+#initBtn.show{opacity:1}
+#initBtn:hover{background:rgba(103,232,249,.12);box-shadow:0 0 24px rgba(103,232,249,.35)}
+.cursor::after{content:"▌";animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- HUD ---------- */
+header{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:18px;
+  padding:10px 20px;background:linear-gradient(180deg,rgba(4,7,15,.94),rgba(4,7,15,.75) 70%,transparent);
+  backdrop-filter:blur(6px);font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--line)}
+header .brand{font-family:var(--sans);font-weight:700;letter-spacing:.12em;font-size:13px;color:#fff;white-space:nowrap}
+header .brand span{color:var(--cyan)}
+header .met{color:var(--green);white-space:nowrap}
+header .spacer{flex:1}
+.fuel{display:flex;align-items:center;gap:8px;color:var(--dim);white-space:nowrap}
+.fuel-bar{width:120px;height:8px;border:1px solid var(--line-strong);position:relative;overflow:hidden}
+.fuel-bar i{position:absolute;inset:1px;transform-origin:left;transform:scaleX(0);
+  background:linear-gradient(90deg,var(--amber),var(--green));transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+#exportBtn{font-family:var(--mono);font-size:10px;letter-spacing:.15em;background:transparent;
+  border:1px solid var(--line-strong);color:var(--cyan);padding:7px 12px;cursor:pointer;text-transform:uppercase;white-space:nowrap}
+#exportBtn:hover{background:rgba(103,232,249,.12)}
+
+/* ---------- rail ---------- */
+nav#rail{position:fixed;left:18px;top:50%;transform:translateY(-50%);z-index:20;display:flex;flex-direction:column;gap:4px;font-family:var(--mono)}
+nav#rail a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--dim);font-size:10px;
+  letter-spacing:.12em;padding:5px 8px;border-left:2px solid rgba(103,232,249,.15);transition:all .3s;text-transform:uppercase}
+nav#rail a .t{color:var(--dim);width:32px}
+nav#rail a .dot{width:7px;height:7px;border:1px solid var(--dim);border-radius:50%;flex:none;transition:all .3s}
+nav#rail a .lbl{opacity:0;transform:translateX(-6px);transition:all .3s;white-space:nowrap}
+nav#rail:hover a .lbl,nav#rail a.active .lbl{opacity:1;transform:none}
+nav#rail a.active{color:var(--cyan);border-left-color:var(--cyan)}
+nav#rail a.active .t{color:var(--cyan)}
+nav#rail a.active .dot{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+nav#rail a.done .dot{background:var(--green);border-color:var(--green)}
+nav#rail a.done .t{color:var(--green)}
+
+/* ---------- gantry rocket ---------- */
+#gantry{position:fixed;right:26px;top:80px;bottom:30px;width:64px;z-index:15;pointer-events:none;
+  border-right:1px dashed rgba(103,232,249,.25);font-family:var(--mono)}
+#gantry .mark{position:absolute;right:-1px;width:12px;border-top:1px solid rgba(103,232,249,.3)}
+#gantry .mark span{position:absolute;right:16px;top:-8px;font-size:9px;color:var(--dim)}
+#rocketWrap{position:absolute;right:8px;bottom:0;transition:bottom 1.4s cubic-bezier(.3,.9,.3,1);width:44px}
+#rocketWrap svg{display:block;filter:drop-shadow(0 0 10px rgba(103,232,249,.35))}
+.flame{opacity:0;transform-origin:50% 0}
+#rocketWrap.thrust .flame{opacity:1;animation:flick .12s infinite alternate}
+@keyframes flick{from{transform:scaleY(.75)}to{transform:scaleY(1.15)}}
+
+/* ---------- sections ---------- */
+main{position:relative;z-index:5}
+section.phase{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:110px 120px 80px;position:relative}
+.frame{width:min(940px,100%);position:relative;background:var(--panel);backdrop-filter:blur(8px);
+  border:1px solid var(--line);padding:clamp(22px,3.6vw,46px);
+  opacity:0;transform:translateY(36px);transition:opacity .9s,transform .9s cubic-bezier(.2,.8,.2,1)}
+.frame.visible{opacity:1;transform:none}
+.frame::before,.frame::after,.frame .c3,.frame .c4{content:"";position:absolute;width:16px;height:16px;pointer-events:none}
+.frame::before{top:-1px;left:-1px;border-top:2px solid var(--line-strong);border-left:2px solid var(--line-strong)}
+.frame::after{top:-1px;right:-1px;border-top:2px solid var(--line-strong);border-right:2px solid var(--line-strong)}
+.frame .c3{bottom:-1px;left:-1px;border-bottom:2px solid var(--line-strong);border-left:2px solid var(--line-strong)}
+.frame .c4{bottom:-1px;right:-1px;border-bottom:2px solid var(--line-strong);border-right:2px solid var(--line-strong)}
+
+.phase-tag{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--amber);
+  text-transform:uppercase;display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.phase-tag::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(251,191,36,.5),transparent)}
+h2.phase-title{font-size:clamp(26px,4vw,40px);font-weight:700;color:#fff;margin-bottom:4px}
+h2.phase-title em{color:var(--cyan);font-style:normal}
+.phase-sub{color:var(--dim);font-size:14.5px;margin-bottom:22px}
+
+/* duo: illustration + specs */
+.duo{display:grid;grid-template-columns:300px 1fr;gap:26px;align-items:stretch;margin-bottom:22px}
+.viz{border:1px solid var(--line);background:
+  radial-gradient(circle at 50% 45%,rgba(103,232,249,.08),transparent 70%),rgba(6,11,24,.6);
+  display:flex;align-items:center;justify-content:center;padding:16px;min-height:230px;position:relative;overflow:hidden}
+.viz svg{width:100%;height:auto;max-height:260px}
+.viz .cap{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-family:var(--mono);
+  font-size:9px;letter-spacing:.3em;color:#43567c;text-transform:uppercase}
+.side{display:flex;flex-direction:column;gap:12px;justify-content:center}
+
+.specs{display:grid;grid-template-columns:1fr;gap:10px}
+.spec{display:flex;gap:14px;align-items:center;border:1px solid var(--line);
+  background:rgba(9,15,30,.5);padding:12px 14px}
+.spec .ic{font-size:22px;flex:none;width:34px;text-align:center;filter:drop-shadow(0 0 6px rgba(103,232,249,.4))}
+.spec .k{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--cyan);text-transform:uppercase;display:block}
+.spec .d{font-size:13px;color:var(--dim);line-height:1.4}
+.spec.warn2 .k{color:var(--amber)}
+
+.tip{border:1px dashed rgba(251,191,36,.45);padding:11px 14px;font-size:13px;color:#f4dfae;
+  background:rgba(251,191,36,.05);display:flex;gap:12px;align-items:center}
+.tip .ic{font-size:20px;flex:none}
+.tip b{color:var(--amber);font-weight:500}
+
+/* ghost example chips */
+.ghosts{margin-top:4px}
+.ghosts .gl{font-family:var(--mono);font-size:9px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;display:block;margin-bottom:8px}
+.ghosts .row{display:flex;flex-wrap:wrap;gap:8px}
+.ghost{font-family:var(--mono);font-size:11px;color:var(--dim);border:1px dashed rgba(127,147,184,.5);
+  padding:7px 11px;cursor:pointer;transition:all .2s;background:transparent}
+.ghost:hover{color:var(--cyan);border-color:var(--cyan);background:rgba(103,232,249,.08)}
+.ghost::before{content:"+ ";color:var(--green)}
+
+/* transmissions */
+details.tx{margin:18px 0 0;border:1px solid rgba(52,211,153,.35);background:rgba(52,211,153,.05)}
+details.tx summary{cursor:pointer;list-style:none;padding:11px 16px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.2em;color:var(--green);text-transform:uppercase;display:flex;align-items:center;gap:10px;user-select:none}
+details.tx summary::-webkit-details-marker{display:none}
+details.tx summary::before{content:"▸";transition:transform .25s}
+details.tx[open] summary::before{transform:rotate(90deg)}
+details.tx summary .sig{margin-left:auto;display:flex;gap:3px}
+details.tx summary .sig i{width:3px;background:var(--green);animation:sig 1s infinite}
+details.tx summary .sig i:nth-child(1){height:6px}
+details.tx summary .sig i:nth-child(2){height:10px;animation-delay:.2s}
+details.tx summary .sig i:nth-child(3){height:8px;animation-delay:.4s}
+@keyframes sig{50%{opacity:.25}}
+details.tx .tx-body{padding:4px 16px 16px}
+
+/* stat + goal cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:8px}
+.card{border:1px solid rgba(52,211,153,.3);background:rgba(4,15,10,.5);padding:13px 10px;text-align:center}
+.card .big{font-size:24px;display:block;margin-bottom:6px}
+.card .val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--green);display:block}
+.card .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;display:block;margin-top:4px;line-height:1.5}
+.card.warnc{border-color:rgba(251,191,36,.35)}
+.card.warnc .val{color:var(--amber)}
+.arrowline{text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim);margin:10px 0 2px;letter-spacing:.12em}
+.arrowline b{color:var(--cyan);font-weight:500}
+
+/* consoles */
+.console{margin-top:20px;border:1px solid var(--line-strong);background:rgba(4,10,22,.75)}
+.console .bar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:10px;letter-spacing:.25em;color:var(--cyan);text-transform:uppercase}
+.console .bar .lights{margin-left:auto;display:flex;gap:6px}
+.console .bar .lights i{width:8px;height:8px;border-radius:50%;background:#22314f}
+.console .bar .lights i.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+.console .pad{padding:16px}
+.inrow{display:flex;gap:10px}
+input[type=text],textarea,select{width:100%;background:rgba(9,15,30,.9);border:1px solid var(--line);
+  color:var(--ink);font-family:var(--mono);font-size:13px;padding:11px 13px;outline:none;resize:vertical}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(103,232,249,.35)}
+::placeholder{color:#4a5d80}
+button.add{font-family:var(--mono);font-size:11px;letter-spacing:.15em;cursor:pointer;
+  background:rgba(103,232,249,.1);color:var(--cyan);border:1px solid var(--line-strong);
+  padding:11px 18px;text-transform:uppercase;white-space:nowrap;transition:all .2s}
+button.add:hover{background:rgba(103,232,249,.22);box-shadow:0 0 14px rgba(103,232,249,.25)}
+.hint{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.1em;margin-top:10px}
+.warn{color:var(--red)!important;animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+#valueChips{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;min-height:8px}
+.chip{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12.5px;
+  border:1px solid var(--green);color:#d3f7e6;background:rgba(52,211,153,.08);padding:8px 12px;
+  animation:pop .3s cubic-bezier(.2,1.6,.4,1)}
+.chip .n{color:var(--green);font-weight:700}
+.chip button{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;font-family:var(--mono)}
+.chip button:hover{color:var(--red)}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+
+ul.items{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:8px}
+ul.items li{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;font-size:13px;
+  border:1px solid var(--line);background:rgba(103,232,249,.04);animation:pop .25s;font-family:var(--mono)}
+ul.items li .txt{flex:1;white-space:pre-wrap}
+ul.items li button{background:none;border:none;color:var(--dim);cursor:pointer;font-family:var(--mono)}
+ul.items li button:hover{color:var(--red)}
+ul.items li::before{content:"›";color:var(--cyan)}
+#taskList li .dur{color:var(--amber);font-size:11px;border:1px solid rgba(251,191,36,.4);padding:2px 7px;white-space:nowrap}
+
+/* scope quads */
+.quads{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.quad{border:1px solid var(--line);background:rgba(9,15,30,.6);padding:14px}
+.quad h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:2px;display:flex;gap:8px;align-items:center}
+.quad h4 .qi{font-size:16px}
+.quad p.q-sub{font-size:11.5px;color:var(--dim);margin-bottom:10px;line-height:1.4}
+.quad.q1 h4{color:var(--cyan)} .quad.q2 h4{color:var(--green)}
+.quad.q3 h4{color:var(--red)} .quad.q4 h4{color:var(--amber)}
+.quad ul.items li{font-size:12px;padding:8px 10px}
+
+.task-form{display:grid;grid-template-columns:1fr 150px auto;gap:10px}
+
+.slider-row{display:flex;align-items:center;gap:14px;margin-top:14px;font-family:var(--mono);font-size:12px}
+.slider-row label{width:150px;color:var(--dim);letter-spacing:.08em}
+input[type=range]{flex:1;-webkit-appearance:none;background:transparent;height:26px}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:#1b2946;border:1px solid var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-7px;
+  background:var(--cyan);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--cyan)}
+.slider-row output{width:52px;text-align:right;color:var(--green)}
+
+.phase-actions{display:flex;align-items:center;gap:14px;margin-top:26px;flex-wrap:wrap}
+button.complete{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  padding:13px 24px;cursor:pointer;transition:all .25s;background:transparent;border:1px solid var(--green);color:var(--green)}
+button.complete:hover{background:rgba(52,211,153,.14);box-shadow:0 0 18px rgba(52,211,153,.3)}
+button.complete.done{background:var(--green);color:#04140c;font-weight:700}
+a.next{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--dim);text-decoration:none;text-transform:uppercase;margin-left:auto}
+a.next:hover{color:var(--cyan)}
+
+/* ---------- hero ---------- */
+#hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  text-align:center;position:relative;z-index:5;padding:110px 24px 0;overflow:hidden}
+#hero .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.45em;color:var(--amber);text-transform:uppercase;margin-bottom:16px}
+#hero h1{font-size:clamp(38px,7.5vw,86px);font-weight:700;line-height:1.02;color:#fff;position:relative;z-index:6}
+#hero h1 .grad{background:linear-gradient(90deg,var(--cyan),var(--green));-webkit-background-clip:text;background-clip:text;color:transparent}
+#hero .byline{margin-top:14px;color:var(--dim);font-size:15px;max-width:46ch;position:relative;z-index:6}
+#hero .byline b{color:var(--ink);font-weight:500}
+#hero .author{margin-top:10px;font-family:var(--mono);font-size:12px;letter-spacing:.25em;color:var(--cyan);text-transform:uppercase;z-index:6}
+#hero .dedic{margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:#3d4f74;text-transform:uppercase;z-index:6}
+#hero .choice{margin-top:26px;display:flex;gap:18px;flex-wrap:wrap;justify-content:center;position:relative;z-index:6}
+#hero .choice a{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;
+  padding:15px 28px;border:1px solid var(--line-strong);color:var(--cyan);transition:all .25s;background:rgba(4,7,15,.6)}
+#hero .choice a.primary{background:rgba(103,232,249,.12)}
+#hero .choice a:hover{box-shadow:0 0 22px rgba(103,232,249,.3);background:rgba(103,232,249,.18)}
+#hero .choice a.ghost2{color:var(--dim);border-color:rgba(127,147,184,.35)}
+#heroScene{width:min(1000px,100%);margin-top:8px;position:relative;z-index:4}
+#heroScene svg{width:100%;height:auto;display:block}
+.padlight{animation:padblink 1.6s infinite}
+@keyframes padblink{50%{opacity:.15}}
+.steam{animation:steam 4s ease-in-out infinite;transform-origin:center bottom}
+@keyframes steam{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.65;transform:scale(1.12)}}
+.heroStar{animation:blink 2.4s steps(1) infinite}
+
+/* ---------- per-phase SVG animation ---------- */
+.spin-slow{animation:spin 14s linear infinite;transform-origin:center;transform-box:fill-box}
+.spin-rev{animation:spinrev 20s linear infinite;transform-origin:center;transform-box:fill-box}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spinrev{to{transform:rotate(-360deg)}}
+.gyro-node{fill:#22314f;stroke:#54658a;transition:all .4s}
+.gyro-node.on{fill:var(--green);stroke:#d3f7e6;filter:drop-shadow(0 0 6px var(--green))}
+.pulse{animation:pulse 2.2s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes pulse{50%{opacity:.35}}
+.sweep{animation:spin 4s linear infinite;transform-origin:center;transform-box:fill-box}
+.dashline{stroke-dasharray:6 5;animation:dashmove 1.4s linear infinite}
+@keyframes dashmove{to{stroke-dashoffset:-11}}
+.growbar{transform:scaleX(0);transform-origin:left;animation:grow 1.6s cubic-bezier(.2,.8,.2,1) forwards;transform-box:fill-box}
+.visible .growbar{animation-play-state:running}
+@keyframes grow{to{transform:scaleX(1)}}
+.g2{animation-delay:.25s}.g3{animation-delay:.5s}.g4{animation-delay:.75s}
+.tele-line{stroke-dasharray:600;stroke-dashoffset:600;animation:draw 3s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.blip{animation:blip 2s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes blip{50%{transform:scale(1.5);opacity:.5}}
+.floaty{animation:floaty 5s ease-in-out infinite;transform-box:fill-box}
+@keyframes floaty{50%{transform:translateY(-8px)}}
+
+/* ---------- go/no-go + launch ---------- */
+.gonogo{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:20px 0}
+.station{border:1px solid var(--line);padding:12px 14px;font-family:var(--mono);display:flex;flex-direction:column;gap:6px;background:rgba(9,15,30,.6)}
+.station .s-name{font-size:10px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+.station .s-status{font-size:15px;font-weight:700;letter-spacing:.15em}
+.station.go{border-color:rgba(52,211,153,.6)}
+.station.go .s-status{color:var(--green);text-shadow:0 0 10px rgba(52,211,153,.5)}
+.station.nogo .s-status{color:var(--red)}
+#launchBtn{display:block;margin:26px auto 6px;font-family:var(--mono);font-size:16px;font-weight:700;
+  letter-spacing:.35em;text-transform:uppercase;padding:22px 54px;cursor:pointer;
+  color:#2a0505;background:linear-gradient(180deg,#ff6b4a,#e11d1d);border:2px solid #ff9d7a;
+  box-shadow:0 0 30px rgba(239,68,68,.45),inset 0 0 18px rgba(255,255,255,.25);transition:all .25s}
+#launchBtn:hover{transform:scale(1.04);box-shadow:0 0 48px rgba(239,68,68,.7),inset 0 0 18px rgba(255,255,255,.3)}
+#launchBtn:disabled{filter:grayscale(.85) brightness(.6);cursor:not-allowed;transform:none}
+.launch-note{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+
+.polepole{margin-top:30px;padding:0;border:1px solid rgba(251,191,36,.35);overflow:hidden;
+  background:linear-gradient(180deg,rgba(251,191,36,.05),transparent)}
+.polepole .pp-grid{display:grid;grid-template-columns:220px 1fr;align-items:center}
+.polepole svg{width:100%;height:auto;display:block}
+.polepole .pp-txt{padding:18px 22px;font-size:14.5px;color:#e9dcba}
+.polepole .k{font-family:var(--mono);letter-spacing:.3em;font-size:10px;color:var(--amber);text-transform:uppercase;display:block;margin-bottom:8px}
+.polepole em{color:var(--amber);font-style:normal;font-weight:500}
+.climber{animation:climb 6s ease-in-out infinite}
+@keyframes climb{0%{transform:translate(0,0)}50%{transform:translate(26px,-20px)}100%{transform:translate(0,0)}}
+
+/* flowchart */
+.flow{margin:18px 0 4px}
+.flow svg{width:100%;height:auto;display:block}
+
+/* ---------- launch overlay ---------- */
+#launchOverlay{position:fixed;inset:0;z-index:200;background:#02040a;display:none;align-items:center;justify-content:center;overflow:hidden}
+#launchOverlay.on{display:flex}
+#bigCount{font-family:var(--mono);font-size:clamp(90px,24vw,260px);font-weight:700;color:var(--amber);
+  text-shadow:0 0 60px rgba(251,191,36,.7);z-index:5}
+#bigCount.word{font-size:clamp(34px,8vw,110px);color:var(--green);letter-spacing:.1em;text-shadow:0 0 60px rgba(52,211,153,.8)}
+#launchScene{position:absolute;inset:0}
+.streak{position:absolute;width:2px;background:linear-gradient(180deg,transparent,var(--cyan));opacity:0}
+#launchOverlay.flying .streak{opacity:.8;animation:streak .7s linear infinite}
+@keyframes streak{from{transform:translateY(-140vh)}to{transform:translateY(140vh)}}
+#bigRocket{position:absolute;left:50%;bottom:8vh;transform:translateX(-50%);width:min(120px,20vw);z-index:4}
+#launchOverlay.shake #bigRocket{animation:rumble .08s infinite}
+@keyframes rumble{25%{transform:translateX(calc(-50% - 3px))}75%{transform:translateX(calc(-50% + 3px))}}
+#launchOverlay.flying #bigRocket{animation:ascend 3.4s cubic-bezier(.55,0,.85,.4) forwards}
+@keyframes ascend{to{bottom:130vh}}
+#launchOverlay.ignition #bigRocket .flame{opacity:1;animation:flick .1s infinite alternate}
+#finale{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;opacity:0;transition:opacity 1.6s;z-index:6;padding:24px}
+#finale.show{opacity:1}
+#finale h2{font-size:clamp(40px,9vw,110px);font-weight:700;letter-spacing:.14em;color:#fff}
+#finale h2 span{background:linear-gradient(90deg,var(--cyan),var(--green),var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent}
+#finale p{margin-top:16px;color:var(--dim);font-size:16px;max-width:52ch}
+#finale .fin-actions{margin-top:34px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+#finale button{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  padding:14px 26px;cursor:pointer;background:transparent;border:1px solid var(--line-strong);color:var(--cyan)}
+#finale button:hover{background:rgba(103,232,249,.14)}
+
+#toast{position:fixed;bottom:26px;left:50%;transform:translate(-50%,80px);z-index:80;
+  font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--green);
+  border:1px solid rgba(52,211,153,.5);background:rgba(4,15,10,.92);padding:12px 22px;
+  transition:transform .4s cubic-bezier(.2,.9,.3,1.3);text-transform:uppercase}
+#toast.show{transform:translate(-50%,0)}
+
+footer{position:relative;z-index:5;text-align:center;padding:40px 20px 60px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.2em;color:#37486b;text-transform:uppercase}
+
+@media (max-width:900px){
+  section.phase{padding:100px 18px 60px}
+  nav#rail{display:none}
+  #gantry{display:none}
+  .duo{grid-template-columns:1fr}
+  .viz{min-height:200px}
+  .quads{grid-template-columns:1fr}
+  .task-form{grid-template-columns:1fr}
+  header{gap:10px;flex-wrap:wrap}
+  .fuel{display:none}
+  .polepole .pp-grid{grid-template-columns:1fr}
+}
+@media print{
+  #stars,.scanlines,.vignette,#boot,nav#rail,#gantry,header,#launchOverlay,#toast{display:none!important}
+  body{background:#fff;color:#000}
+  .frame{opacity:1;transform:none;background:#fff;border-color:#999}
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<div class="vignette"></div>
+<div class="scanlines"></div>
+
+<!-- ============ BOOT ============ -->
+<div id="boot">
+  <div id="bootLog" class="cursor"></div>
+  <div id="bootTitle">
+    <h1>COUNTDOWN TO <span>LIFTOFF</span></h1>
+    <p>A template for a successful life</p>
+  </div>
+  <button id="initBtn">Initialize Mission</button>
+</div>
+
+<!-- ============ HUD ============ -->
+<header>
+  <div class="brand">CTL <span>▲</span> MISSION CONTROL</div>
+  <div class="met">MET <span id="met">+00:00:00</span></div>
+  <div class="spacer"></div>
+  <div class="fuel">FUEL <div class="fuel-bar"><i id="fuelFill"></i></div> <span id="fuelPct">0%</span></div>
+  <button id="exportBtn">⬇ Export Mission Plan</button>
+</header>
+
+<!-- ============ RAIL ============ -->
+<nav id="rail">
+  <a href="#hero"    data-sec="hero"><span class="t">PAD</span><span class="dot"></span><span class="lbl">Launch Pad</span></a>
+  <a href="#values"  data-sec="values"><span class="t">T-6</span><span class="dot"></span><span class="lbl">Core Values</span></a>
+  <a href="#vision"  data-sec="vision"><span class="t">T-5</span><span class="dot"></span><span class="lbl">Vision</span></a>
+  <a href="#mission" data-sec="mission"><span class="t">T-4</span><span class="dot"></span><span class="lbl">Mission</span></a>
+  <a href="#scope"   data-sec="scope"><span class="t">T-3</span><span class="dot"></span><span class="lbl">Scope</span></a>
+  <a href="#plan"    data-sec="plan"><span class="t">T-2</span><span class="dot"></span><span class="lbl">Plan</span></a>
+  <a href="#review"  data-sec="review"><span class="t">T-1</span><span class="dot"></span><span class="lbl">Review</span></a>
+  <a href="#liftoff" data-sec="liftoff"><span class="t">T-0</span><span class="dot"></span><span class="lbl">Liftoff</span></a>
+</nav>
+
+<!-- ============ GANTRY ============ -->
+<div id="gantry">
+  <div id="rocketWrap">
+    <svg viewBox="0 0 44 110" xmlns="http://www.w3.org/2000/svg">
+      <g class="flame">
+        <path d="M22 92 C16 100 18 106 22 112 C26 106 28 100 22 92Z" fill="#fbbf24"/>
+        <path d="M22 92 C19 97 20 101 22 105 C24 101 25 97 22 92Z" fill="#fff7d6"/>
+      </g>
+      <path d="M22 2 C30 14 32 26 32 40 L32 74 L12 74 L12 40 C12 26 14 14 22 2Z" fill="#dbe7ff"/>
+      <path d="M22 2 C26 14 27 26 27 40 L27 74 L22 74 Z" fill="#b7c8ea"/>
+      <circle cx="22" cy="34" r="6" fill="#0d1426" stroke="#67e8f9" stroke-width="2"/>
+      <path d="M12 56 L2 78 L12 74 Z" fill="#f87171"/>
+      <path d="M32 56 L42 78 L32 74 Z" fill="#ef4444"/>
+      <rect x="14" y="74" width="16" height="10" fill="#7f93b8"/>
+      <path d="M14 84 L12 92 L32 92 L30 84 Z" fill="#54658a"/>
+    </svg>
+  </div>
+</div>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section id="hero">
+  <div class="eyebrow">/// Mission Briefing ///</div>
+  <h1>COUNTDOWN TO<br><span class="grad">LIFTOFF</span></h1>
+  <p class="byline">Plan your life the way <b>NASA</b> plans missions — from lunar landings to Mars rovers to deep-space telescopes.</p>
+  <p class="author">Dr. Rahul Ramachandran</p>
+  <p class="dedic">— for Sachi —</p>
+  <div class="choice">
+    <a class="primary" href="#values">▲ Begin launch sequence</a>
+    <a class="ghost2" href="#liftoff">Wander aimlessly ↯</a>
+  </div>
+
+  <div id="heroScene">
+    <svg viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="neb1" cx="50%" cy="50%"><stop offset="0%" stop-color="#67e8f9" stop-opacity=".14"/><stop offset="100%" stop-color="#67e8f9" stop-opacity="0"/></radialGradient>
+        <radialGradient id="neb2" cx="50%" cy="50%"><stop offset="0%" stop-color="#a78bfa" stop-opacity=".16"/><stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/></radialGradient>
+        <radialGradient id="moong" cx="35%" cy="35%"><stop offset="0%" stop-color="#f1f5ff"/><stop offset="100%" stop-color="#8fa3c8"/></radialGradient>
+        <linearGradient id="planet" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#123047"/><stop offset="100%" stop-color="#050b16"/></linearGradient>
+        <linearGradient id="towerg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#31415f"/><stop offset="100%" stop-color="#1b2946"/></linearGradient>
+      </defs>
+      <ellipse cx="230" cy="120" rx="260" ry="120" fill="url(#neb1)"/>
+      <ellipse cx="790" cy="90" rx="240" ry="110" fill="url(#neb2)"/>
+      <g fill="#dbe7ff">
+        <circle class="heroStar" cx="90" cy="60" r="2"/><circle cx="180" cy="150" r="1.4"/>
+        <circle class="heroStar" style="animation-delay:.7s" cx="320" cy="70" r="1.6"/>
+        <circle cx="660" cy="50" r="1.5"/><circle class="heroStar" style="animation-delay:1.3s" cx="900" cy="140" r="2"/>
+        <circle cx="760" cy="190" r="1.2"/><circle class="heroStar" style="animation-delay:.4s" cx="540" cy="110" r="1.3"/>
+      </g>
+      <g class="floaty"><circle cx="855" cy="95" r="42" fill="url(#moong)"/>
+        <circle cx="840" cy="82" r="8" fill="#7f93b8" opacity=".45"/><circle cx="868" cy="108" r="5" fill="#7f93b8" opacity=".4"/>
+        <circle cx="852" cy="120" r="3.4" fill="#7f93b8" opacity=".35"/></g>
+      <!-- comet -->
+      <g class="floaty" style="animation-delay:1.2s"><line x1="60" y1="210" x2="130" y2="180" stroke="#67e8f9" stroke-width="2" opacity=".5"/><circle cx="132" cy="179" r="4" fill="#9beafb"/></g>
+      <!-- ground -->
+      <path d="M0 400 Q500 340 1000 400 L1000 460 L0 460 Z" fill="url(#planet)"/>
+      <line x1="285" y1="381" x2="715" y2="381" stroke="#1e2c4c" stroke-width="3"/>
+      <!-- gantry tower -->
+      <g>
+        <rect x="418" y="180" width="26" height="200" fill="url(#towerg)"/>
+        <path d="M418 200 L444 220 M418 240 L444 260 M418 280 L444 300 M418 320 L444 340 M444 200 L418 220 M444 240 L418 260 M444 280 L418 300 M444 320 L418 340" stroke="#54658a" stroke-width="1.4"/>
+        <rect x="440" y="228" width="34" height="6" fill="#54658a"/>
+        <rect x="440" y="288" width="34" height="6" fill="#54658a"/>
+        <circle class="padlight" cx="431" cy="172" r="5" fill="#f87171"/>
+        <line x1="431" y1="180" x2="431" y2="160" stroke="#54658a" stroke-width="2"/>
+      </g>
+      <!-- rocket -->
+      <g transform="translate(478 170) scale(1.55)">
+        <path d="M22 2 C30 14 32 26 32 40 L32 74 L12 74 L12 40 C12 26 14 14 22 2Z" fill="#e8effc"/>
+        <path d="M22 2 C26 14 27 26 27 40 L27 74 L22 74 Z" fill="#b7c8ea"/>
+        <circle cx="22" cy="30" r="6" fill="#0d1426" stroke="#67e8f9" stroke-width="2"/>
+        <rect x="12" y="48" width="20" height="4" fill="#e11d1d"/>
+        <path d="M12 56 L0 82 L12 76 Z" fill="#f87171"/>
+        <path d="M32 56 L44 82 L32 76 Z" fill="#ef4444"/>
+        <rect x="14" y="74" width="16" height="12" fill="#7f93b8"/>
+        <path d="M14 86 L11 96 L33 96 L30 86 Z" fill="#54658a"/>
+        <text x="22" y="68" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#31415f" letter-spacing="1">CTL-1</text>
+      </g>
+      <!-- launch mount + steam -->
+      <rect x="486" y="372" width="70" height="10" fill="#1b2946"/>
+      <g fill="#8fa3c8">
+        <ellipse class="steam" cx="465" cy="392" rx="26" ry="12" opacity=".4"/>
+        <ellipse class="steam" style="animation-delay:1.3s" cx="580" cy="396" rx="34" ry="14" opacity=".35"/>
+        <ellipse class="steam" style="animation-delay:2.2s" cx="520" cy="402" rx="22" ry="10" opacity=".3"/>
+      </g>
+      <!-- pad lights -->
+      <circle class="padlight" cx="300" cy="378" r="4" fill="#fbbf24"/>
+      <circle class="padlight" style="animation-delay:.8s" cx="700" cy="378" r="4" fill="#fbbf24"/>
+      <text x="500" y="440" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#43567c" letter-spacing="6">LAUNCH COMPLEX · YOU-1</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ============ T-6 CORE VALUES ============ -->
+<section class="phase" id="values">
+  <div class="frame"><span class="c3"></span><span class="c4"></span>
+    <div class="phase-tag">T-minus 6 · Guidance System</div>
+    <h2 class="phase-title">Define your <em>Core Values</em></h2>
+    <p class="phase-sub">Every spacecraft needs a guidance system. Yours is built from values.</p>
+
+    <div class="duo">
+      <div class="viz">
+        <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+          <g class="spin-rev"><circle cx="110" cy="110" r="94" fill="none" stroke="#31415f" stroke-width="1.5" stroke-dasharray="4 7"/></g>
+          <g class="spin-slow">
+            <circle cx="110" cy="110" r="72" fill="none" stroke="#67e8f9" stroke-width="1.5" opacity=".6"/>
+            <circle id="gv1" class="gyro-node" cx="110" cy="38" r="9"/>
+            <circle id="gv2" class="gyro-node" cx="178" cy="88" r="9"/>
+            <circle id="gv3" class="gyro-node" cx="152" cy="168" r="9"/>
+            <circle id="gv4" class="gyro-node" cx="68"  cy="168" r="9"/>
+            <circle id="gv5" class="gyro-node" cx="42"  cy="88" r="9"/>
+          </g>
+          <circle class="pulse" cx="110" cy="110" r="26" fill="rgba(103,232,249,.15)" stroke="#67e8f9"/>
+          <text x="110" y="106" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#67e8f9" letter-spacing="1">YOU</text>
+          <text x="110" y="120" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7f93b8">CORE</text>
+        </svg>
+        <span class="cap">Gyroscope · 5 value slots</span>
+      </div>
+      <div class="side">
+        <div class="specs">
+          <div class="spec"><span class="ic">🧭</span><div><span class="k">They define you</span><span class="d">How you live &amp; meet the world.</span></div></div>
+          <div class="spec"><span class="ic">✋</span><div><span class="k">Max five · prioritized</span><span class="d">Keep them simple. List them in order.</span></div></div>
+          <div class="spec warn2"><span class="ic">⚓</span><div><span class="k">Rarely change</span><span class="d">Re-evaluate with experience — but values should hold steady.</span></div></div>
+        </div>
+        <div class="tip"><span class="ic">💡</span><span><b>Brainstorm:</b> picture someone you admire. The traits you respect in them? Those are your values.</span></div>
+      </div>
+    </div>
+
+    <div class="console">
+      <div class="bar">GUIDANCE CONSOLE <div class="lights"><i id="vl1"></i><i id="vl2"></i><i id="vl3"></i><i id="vl4"></i><i id="vl5"></i></div></div>
+      <div class="pad">
+        <div class="inrow">
+          <input type="text" id="valueInput" maxlength="90" placeholder="I value…">
+          <button class="add" id="valueAdd">+ Install</button>
+        </div>
+        <div id="valueChips"></div>
+        <div class="ghosts"><span class="gl">Examples — tap to adopt</span>
+          <div class="row">
+            <button class="ghost" data-adopt="values">hard work &amp; integrity</button>
+            <button class="ghost" data-adopt="values">learning &amp; open-mindedness</button>
+            <button class="ghost" data-adopt="values">respect earned by actions, not credentials</button>
+            <button class="ghost" data-adopt="values">experiences over material possessions</button>
+          </div>
+        </div>
+        <p class="hint" id="valueHint">GUIDANCE CAPACITY: MAX 5 VALUES</p>
+      </div>
+    </div>
+
+    <div class="phase-actions">
+      <button class="complete" data-phase="values">◉ Mark phase complete</button>
+      <a class="next" href="#vision">T-5 · Vision ▸</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ T-5 VISION ============ -->
+<section class="phase" id="vision">
+  <div class="frame"><span class="c3"></span><span class="c4"></span>
+    <div class="phase-tag">T-minus 5 · Destination</div>
+    <h2 class="phase-title">Write your <em>Vision</em></h2>
+    <p class="phase-sub">Fix your telescope on a point 3–5 years out. What do you want to become?</p>
+
+    <div class="duo">
+      <div class="viz">
+        <svg viewBox="0 0 240 220" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="beam" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0%" stop-color="#67e8f9" stop-opacity=".25"/><stop offset="100%" stop-color="#67e8f9" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path d="M74 150 L210 30 L216 46 L86 162 Z" fill="url(#beam)"/>
+          <g class="floaty">
+            <circle class="pulse" cx="196" cy="42" r="17" fill="rgba(167,139,250,.25)" stroke="#a78bfa"/>
+            <circle cx="196" cy="42" r="9" fill="#a78bfa"/>
+            <ellipse cx="196" cy="42" rx="20" ry="5" fill="none" stroke="#c4b5fd" transform="rotate(-18 196 42)"/>
+          </g>
+          <text x="196" y="76" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#a78bfa" letter-spacing="1">3–5 YRS</text>
+          <g>
+            <rect x="52" y="132" width="58" height="22" rx="4" transform="rotate(-40 81 143)" fill="#31415f" stroke="#54658a"/>
+            <rect x="88" y="112" width="16" height="14" rx="3" transform="rotate(-40 96 119)" fill="#54658a"/>
+            <rect x="30" y="158" width="34" height="16" rx="3" transform="rotate(-40 47 166)" fill="#1b2946" stroke="#31415f"/>
+            <line x1="66" y1="168" x2="46" y2="204" stroke="#54658a" stroke-width="4"/>
+            <line x1="66" y1="168" x2="86" y2="204" stroke="#54658a" stroke-width="4"/>
+            <circle cx="66" cy="167" r="7" fill="#0d1426" stroke="#67e8f9" stroke-width="2"/>
+          </g>
+          <circle class="heroStar" cx="150" cy="120" r="1.6" fill="#dbe7ff"/>
+          <circle class="heroStar" style="animation-delay:.9s" cx="120" cy="60" r="1.8" fill="#dbe7ff"/>
+        </svg>
+        <span class="cap">Telescope · aim before you fly</span>
+      </div>
+      <div class="side">
+        <div class="specs">
+          <div class="spec"><span class="ic">🔭</span><div><span class="k">3–5 year horizon</span><span class="d">Future-looking &amp; written down — it aligns every effort.</span></div></div>
+          <div class="spec"><span class="ic">✍️</span><div><span class="k">1–3 statements only</span><span class="d">Career, health, relationships… pick what matters most. Be realistic.</span></div></div>
+        </div>
+        <div class="tip"><span class="ic">💡</span><span><b>Brainstorm:</b> picture your future self, vision achieved. What did you accomplish? Write toward that.</span></div>
+      </div>
+    </div>
+
+    <div class="console">
+      <div class="bar">NAVIGATION CONSOLE · PLOT 1–3 COURSES</div>
+      <div class="pad">
+        <div class="inrow">
+          <input type="text" id="visionInput" maxlength="160" placeholder="In 3–5 years, I will…">
+          <button class="add" id="visionAdd">+ Plot</button>
+        </div>
+        <ul class="items" id="visionList"></ul>
+        <div class="ghosts"><span class="gl">Examples — tap to adopt</span>
+          <div class="row">
+            <button class="ghost" data-adopt="visions">rediscover a childlike sense of wonder — new things, places, experiences</button>
+            <button class="ghost" data-adopt="visions">focus on research, driven by love of learning &amp; creating knowledge</button>
+          </div>
+        </div>
+        <p class="hint" id="visionHint">TRAJECTORY LIMIT: 1–3 VISION STATEMENTS</p>
+      </div>
+    </div>
+
+    <div class="phase-actions">
+      <button class="complete" data-phase="vision">◉ Mark phase complete</button>
+      <a class="next" href="#mission">T-4 · Mission ▸</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ T-4 MISSION ============ -->
+<section class="phase" id="mission">
+  <div class="frame"><span class="c3"></span><span class="c4"></span>
+    <div class="phase-tag">T-minus 4 · Flight Program</div>
+    <h2 class="phase-title">Declare your <em>Missions</em></h2>
+    <p class="phase-sub">Vision is the destination. Missions are the flights that get you there — here and now.</p>
+
+    <div class="duo">
+      <div class="viz">
+        <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="110" cy="110" r="96" fill="rgba(9,15,30,.9)" stroke="#fbbf24" stroke-width="3"/>
+          <circle cx="110" cy="110" r="88" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3 4"/>
+          <path id="arcT" d="M34 110 A76 76 0 0 1 186 110" fill="none"/>
+          <text font-family="JetBrains Mono" font-size="11" fill="#fbbf24" letter-spacing="3" text-anchor="middle">
+            <textPath href="#arcT" startOffset="50%">MISSION · JAPAN-01</textPath>
+          </text>
+          <!-- torii gate -->
+          <g stroke="#f87171" stroke-width="6" stroke-linecap="round">
+            <line x1="78" y1="150" x2="82" y2="96"/><line x1="142" y1="150" x2="138" y2="96"/>
+            <path d="M64 96 Q110 84 156 96" fill="none"/>
+            <line x1="72" y1="110" x2="148" y2="110" stroke-width="4"/>
+          </g>
+          <!-- sun -->
+          <circle cx="110" cy="72" r="11" fill="#f87171" opacity=".9"/>
+          <!-- little rocket orbiting -->
+          <g class="spin-slow">
+            <g transform="translate(110 20)">
+              <path d="M0 -8 L4 4 L0 2 L-4 4 Z" fill="#67e8f9"/>
+            </g>
+          </g>
+          <text x="110" y="176" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#7f93b8" letter-spacing="2">IMMERSE · EXPLORE · WONDER</text>
+        </svg>
+        <span class="cap">Every mission earns a patch</span>
+      </div>
+      <div class="side">
+        <div class="specs">
+          <div class="spec"><span class="ic">🚀</span><div><span class="k">Mission = here &amp; now</span><span class="d">What you must accomplish for a vision to come true.</span></div></div>
+          <div class="spec"><span class="ic">🎯</span><div><span class="k">Goals = the what</span><span class="d">Each mission carries a set of goals.</span></div></div>
+          <div class="spec warn2"><span class="ic">🧩</span><div><span class="k">Purpose = the why</span><span class="d">Every goal's why must align with mission &amp; vision.</span></div></div>
+        </div>
+        <div class="tip"><span class="ic">💡</span><span><b>Brainstorm:</b> break your vision into actionable missions — the specific steps that make it real.</span></div>
+      </div>
+    </div>
+
+    <details class="tx" open>
+      <summary>Sample mission file · JAPAN-01 <span class="sig"><i></i><i></i><i></i></span></summary>
+      <div class="tx-body">
+        <div class="arrowline">VISION: <b>childlike wonder</b> ─▶ MISSION: <b>“Visit Japan &amp; immerse myself in its culture”</b></div>
+        <div class="cards">
+          <div class="card"><span class="big">💴</span><span class="val">SAVE FOR TRAVEL</span><span class="lbl">why · fund the journey around Japan</span></div>
+          <div class="card"><span class="big">🗣️</span><span class="val">LEARN JAPANESE</span><span class="lbl">why · converse with locals</span></div>
+        </div>
+      </div>
+    </details>
+
+    <div class="console">
+      <div class="bar">FLIGHT PROGRAM · YOUR MISSION + GOALS</div>
+      <div class="pad">
+        <input type="text" id="missionInput" maxlength="160" placeholder="Mission statement — I want to…">
+        <div class="inrow" style="margin-top:10px">
+          <input type="text" id="goalInput" maxlength="120" placeholder="Goal (the what)…">
+          <input type="text" id="purposeInput" maxlength="120" placeholder="Purpose (the why)…">
+          <button class="add" id="goalAdd">+ Load</button>
+        </div>
+        <ul class="items" id="goalList"></ul>
+      </div>
+    </div>
+
+    <div class="phase-actions">
+      <button class="complete" data-phase="mission">◉ Mark phase complete</button>
+      <a class="next" href="#scope">T-3 · Scope ▸</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ T-3 SCOPE ============ -->
+<section class="phase" id="scope">
+  <div class="frame"><span class="c3"></span><span class="c4"></span>
+    <div class="phase-tag">T-minus 3 · Flight Envelope</div>
+    <h2 class="phase-title">Define your <em>Scope</em></h2>
+    <p class="phase-sub">The mission's boundaries: what's in, what's out, who helps, what constrains. Focus follows.</p>
+
+    <div class="duo">
+      <div class="viz">
+        <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="wedge" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#34d399" stop-opacity="0"/><stop offset="100%" stop-color="#34d399" stop-opacity=".4"/>
+          </linearGradient></defs>
+          <circle cx="110" cy="110" r="92" fill="rgba(6,20,14,.5)" stroke="#34d399" stroke-width="1.5"/>
+          <circle cx="110" cy="110" r="62" fill="none" stroke="#34d399" opacity=".4"/>
+          <circle cx="110" cy="110" r="32" fill="none" stroke="#34d399" opacity=".4"/>
+          <line x1="18" y1="110" x2="202" y2="110" stroke="#34d399" opacity=".35"/>
+          <line x1="110" y1="18" x2="110" y2="202" stroke="#34d399" opacity=".35"/>
+          <g class="sweep"><path d="M110 110 L110 18 A92 92 0 0 1 173 43 Z" fill="url(#wedge)"/></g>
+          <circle class="blip" cx="146" cy="72" r="5" fill="#67e8f9"/>
+          <circle class="blip" style="animation-delay:.6s" cx="76" cy="82" r="5" fill="#34d399"/>
+          <circle class="blip" style="animation-delay:1.1s" cx="86" cy="150" r="5" fill="#f87171"/>
+          <circle class="blip" style="animation-delay:1.5s" cx="148" cy="142" r="5" fill="#fbbf24"/>
+          <text x="146" y="60" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#67e8f9">GOALS</text>
+          <text x="76" y="70" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#34d399">OUTCOMES</text>
+          <text x="86" y="168" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#f87171">LIMITS</text>
+          <text x="148" y="160" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#fbbf24">PARTNERS</text>
+        </svg>
+        <span class="cap">Scope radar · 4 components on screen</span>
+      </div>
+      <div class="side">
+        <div class="specs">
+          <div class="spec"><span class="ic">📡</span><div><span class="k">Know your envelope</span><span class="d">Ignore what <i>seems</i> important but doesn't move the mission.</span></div></div>
+          <div class="spec warn2"><span class="ic">🧲</span><div><span class="k">Track distractors too</span><span class="d">Identify people who help — and those who pull you off course.</span></div></div>
+        </div>
+        <div class="cards" style="margin-top:2px">
+          <div class="card"><span class="big">🎯</span><span class="val">$10,000</span><span class="lbl">Japan-01 · 24 months</span></div>
+          <div class="card"><span class="big">🗣️</span><span class="val">FLUENT</span><span class="lbl">Japanese · 6 months</span></div>
+          <div class="card warnc"><span class="big">⚠️</span><span class="val">+$167/MO</span><span class="lbl">gap · $6,000 saved so far</span></div>
+          <div class="card"><span class="big">🤝</span><span class="val">CREW</span><span class="lbl">parents · employer · instructor</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="console">
+      <div class="bar">SCOPE MATRIX · FOUR CORE COMPONENTS</div>
+      <div class="pad">
+        <div class="quads">
+          <div class="quad q1">
+            <h4><span class="qi">🎯</span> Refined Goals</h4>
+            <p class="q-sub">Specific &amp; achievable.</p>
+            <div class="inrow"><input type="text" data-quad="goals" placeholder="Save $10,000 in 24 months"><button class="add" data-quadadd="goals">+</button></div>
+            <ul class="items" id="quad-goals"></ul>
+          </div>
+          <div class="quad q2">
+            <h4><span class="qi">🏁</span> Outcomes · Milestones</h4>
+            <p class="q-sub">Deliverables, with dates.</p>
+            <div class="inrow"><input type="text" data-quad="outcomes" placeholder="Fluent Japanese (6 months)"><button class="add" data-quadadd="outcomes">+</button></div>
+            <ul class="items" id="quad-outcomes"></ul>
+          </div>
+          <div class="quad q3">
+            <h4><span class="qi">⛔</span> Limitations</h4>
+            <p class="q-sub">Time, money, constraints.</p>
+            <div class="inrow"><input type="text" data-quad="limits" placeholder="Current savings only $6,000"><button class="add" data-quadadd="limits">+</button></div>
+            <ul class="items" id="quad-limits"></ul>
+          </div>
+          <div class="quad q4">
+            <h4><span class="qi">🤝</span> Partners · Stakeholders</h4>
+            <p class="q-sub">Who helps? What drives them?</p>
+            <div class="inrow"><input type="text" data-quad="partners" placeholder="Course instructor, parents…"><button class="add" data-quadadd="partners">+</button></div>
+            <ul class="items" id="quad-partners"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-actions">
+      <button class="complete" data-phase="scope">◉ Mark phase complete</button>
+      <a class="next" href="#plan">T-2 · Plan ▸</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ T-2 PLAN ============ -->
+<section class="phase" id="plan">
+  <div class="frame"><span class="c3"></span><span class="c4"></span>
+    <div class="phase-tag">T-minus 2 · Flight Plan</div>
+    <h2 class="phase-title">Build your <em>Plan &amp; Schedule</em></h2>
+    <p class="phase-sub">Decompose until tasks are actionable. Then put every task on the clock.</p>
+
+    <div class="duo">
+      <div class="viz">
+        <svg viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="26" font-family="JetBrains Mono" font-size="9" fill="#7f93b8" letter-spacing="2">SEQUENCE BY DEPENDENCY</text>
+          <text x="24" y="52" font-family="JetBrains Mono" font-size="10" fill="#67e8f9">A</text>
+          <rect class="growbar" x="38" y="42" width="70" height="14" fill="#67e8f9" opacity=".85"/>
+          <text x="24" y="82" font-family="JetBrains Mono" font-size="10" fill="#34d399">B</text>
+          <rect class="growbar g2" x="112" y="72" width="96" height="14" fill="#34d399" opacity=".85"/>
+          <path class="dashline" d="M108 56 L112 72" stroke="#fbbf24" stroke-width="2" fill="none"/>
+          <text x="24" y="112" font-family="JetBrains Mono" font-size="10" fill="#a78bfa">C</text>
+          <rect class="growbar g3" x="38" y="102" width="150" height="14" fill="#a78bfa" opacity=".8"/>
+          <text x="196" y="113" font-family="JetBrains Mono" font-size="8" fill="#7f93b8">∥ PARALLEL</text>
+          <line x1="14" y1="130" x2="246" y2="130" stroke="#31415f"/>
+          <text x="14" y="150" font-family="JetBrains Mono" font-size="9" fill="#fbbf24" letter-spacing="2">⚠ REALITY CHECK</text>
+          <text x="24" y="172" font-family="JetBrains Mono" font-size="8.5" fill="#dbe7ff">4 HRS/DAY</text>
+          <rect class="growbar g2" x="96" y="163" width="34" height="11" fill="#34d399"/>
+          <text x="136" y="172" font-family="JetBrains Mono" font-size="8.5" fill="#34d399">8 WKS</text>
+          <text x="24" y="196" font-family="JetBrains Mono" font-size="8.5" fill="#dbe7ff">1 HR/DAY</text>
+          <rect class="growbar g4" x="96" y="187" width="136" height="11" fill="#f87171"/>
+          <text x="182" y="182" font-family="JetBrains Mono" font-size="8.5" fill="#f87171">32 WKS</text>
+        </svg>
+        <span class="cap">Same course · honest estimates</span>
+      </div>
+      <div class="side">
+        <div class="specs">
+          <div class="spec"><span class="ic">🧱</span><div><span class="k">Decompose</span><span class="d">Split goals into small, trackable, actionable tasks.</span></div></div>
+          <div class="spec"><span class="ic">🗓️</span><div><span class="k">Schedule</span><span class="d">Estimate effort, order by dependency, put on the calendar with start &amp; end dates.</span></div></div>
+          <div class="spec warn2"><span class="ic">⏱️</span><div><span class="k">Be realistic</span><span class="d">An “8-week” course at 1 hr/day is a 32-week course.</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <details class="tx">
+      <summary>Sample mission file · JAPAN-01 · Plan <span class="sig"><i></i><i></i><i></i></span></summary>
+      <div class="tx-body">
+        <ul class="items">
+          <li><span class="txt">💰 Auto-deposit $67/month to savings</span><span class="dur" style="color:var(--amber);font-size:11px;border:1px solid rgba(251,191,36,.4);padding:2px 7px">1 DAY SETUP</span></li>
+          <li><span class="txt">💰 Work 5 extra shifts/month → +$100</span><span class="dur" style="color:var(--amber);font-size:11px;border:1px solid rgba(251,191,36,.4);padding:2px 7px">24 MO</span></li>
+          <li><span class="txt">🗣️ Compare courses on quality &amp; cost</span><span class="dur" style="color:var(--amber);font-size:11px;border:1px solid rgba(251,191,36,.4);padding:2px 7px">1 WK · 30 MIN</span></li>
+          <li><span class="txt">🗣️ Sign up → take classes → practice weekends</span><span class="dur" style="color:var(--amber);font-size:11px;border:1px solid rgba(251,191,36,.4);padding:2px 7px">8 WKS</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <div class="console">
+      <div class="bar">FLIGHT PLAN · TASK MANIFEST</div>
+      <div class="pad">
+        <div class="task-form">
+          <input type="text" id="taskInput" maxlength="140" placeholder="Task — small &amp; actionable…">
+          <input type="text" id="taskDur" maxlength="30" placeholder="Estimate — 8 weeks">
+          <button class="add" id="taskAdd">+ Manifest</button>
+        </div>
+        <ul class="items" id="taskList"></ul>
+      </div>
+    </div>
+
+    <div class="phase-actions">
+      <button class="complete" data-phase="plan">◉ Mark phase complete</button>
+      <a class="next" href="#review">T-1 · Review ▸</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ T-1 REVIEW ============ -->
+<section class="phase" id="review">
+  <div class="frame"><span class="c3"></span><span class="c4"></span>
+    <div class="phase-tag">T-minus 1 · Telemetry</div>
+    <h2 class="phase-title">Run your <em>Reviews</em></h2>
+    <p class="phase-sub">Mission control never stops watching the telemetry. Check in every 2–4 weeks.</p>
+
+    <div class="duo">
+      <div class="viz">
+        <svg viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="#1b2946"><line x1="30" y1="30" x2="30" y2="180"/><line x1="30" y1="180" x2="240" y2="180"/>
+            <line x1="30" y1="60" x2="240" y2="60" stroke-dasharray="3 5"/><line x1="30" y1="120" x2="240" y2="120" stroke-dasharray="3 5"/></g>
+          <text x="26" y="188" text-anchor="end" font-family="JetBrains Mono" font-size="8" fill="#7f93b8">$6K</text>
+          <text x="26" y="124" text-anchor="end" font-family="JetBrains Mono" font-size="8" fill="#7f93b8">$7K</text>
+          <text x="26" y="64" text-anchor="end" font-family="JetBrains Mono" font-size="8" fill="#7f93b8">$8K</text>
+          <!-- setback dip then recovery -->
+          <path class="tele-line" d="M30 180 L80 150 L110 158 L135 120 L185 92 L240 60" fill="none" stroke="#34d399" stroke-width="2.5"/>
+          <circle class="blip" cx="135" cy="120" r="6" fill="#67e8f9"/>
+          <circle class="blip" style="animation-delay:.8s" cx="240" cy="60" r="6" fill="#fbbf24"/>
+          <text x="135" y="106" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#67e8f9">6 MO · CONVERSANT</text>
+          <text x="228" y="46" text-anchor="end" font-family="JetBrains Mono" font-size="8" fill="#fbbf24">1 YR · FLUENT</text>
+          <text x="104" y="170" font-family="JetBrains Mono" font-size="7.5" fill="#f87171">SETBACK — OK!</text>
+          <text x="135" y="205" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#7f93b8" letter-spacing="2">CHECKPOINTS · JAPAN-01</text>
+        </svg>
+        <span class="cap">Progress is rarely a straight line</span>
+      </div>
+      <div class="side">
+        <div class="specs">
+          <div class="spec"><span class="ic">📈</span><div><span class="k">Review periodically</span><span class="d">Every two weeks or monthly is optimal. Done vs. to-go.</span></div></div>
+          <div class="spec warn2"><span class="ic">🛠️</span><div><span class="k">Setbacks are nominal</span><span class="d">Adjust the schedule — keep at it. Gradually, you get there.</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="console">
+      <div class="bar">TELEMETRY CONSOLE · PROGRESS CHECK</div>
+      <div class="pad">
+        <div class="inrow">
+          <select id="cadence">
+            <option value="">Review cadence…</option>
+            <option>Every two weeks</option>
+            <option selected>Monthly</option>
+            <option>Quarterly</option>
+          </select>
+        </div>
+        <div class="slider-row"><label>MISSION PROGRESS</label><input type="range" id="progSlider" min="0" max="100" value="0"><output id="progOut">0%</output></div>
+        <div class="slider-row"><label>CONFIDENCE</label><input type="range" id="confSlider" min="0" max="100" value="50"><output id="confOut">50%</output></div>
+        <div style="margin-top:14px">
+          <textarea id="reviewNotes" rows="2" placeholder="Checkpoint log…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-actions">
+      <button class="complete" data-phase="review">◉ Mark phase complete</button>
+      <a class="next" href="#liftoff">T-0 · Liftoff ▸</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ T-0 LIFTOFF ============ -->
+<section class="phase" id="liftoff">
+  <div class="frame"><span class="c3"></span><span class="c4"></span>
+    <div class="phase-tag">T-minus 0 · Ignition</div>
+    <h2 class="phase-title">Go / No-Go for <em>Launch</em></h2>
+    <p class="phase-sub">Values feed vision · vision spawns missions · missions carry goals into orbit.</p>
+
+    <div class="flow">
+      <svg viewBox="0 0 860 290" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 Z" fill="#67e8f9"/>
+          </marker>
+        </defs>
+        <g stroke="#67e8f9" stroke-width="1.5" fill="none" opacity=".85">
+          <path class="dashline" d="M130 145 H190" marker-end="url(#arr)"/>
+          <path class="dashline" d="M310 145 H370" marker-end="url(#arr)"/>
+          <path class="dashline" d="M470 105 C500 75 520 75 548 75" marker-end="url(#arr)"/>
+          <path class="dashline" d="M470 185 C500 215 520 215 548 215" marker-end="url(#arr)"/>
+          <path class="dashline" d="M660 75 H712" marker-end="url(#arr)"/>
+          <path class="dashline" d="M660 215 H712" marker-end="url(#arr)"/>
+          <path d="M772 103 C772 125 772 165 772 187" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+          <path d="M812 187 C830 145 830 145 812 103" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+        </g>
+        <g text-anchor="middle" font-size="11" letter-spacing="1">
+          <rect x="20" y="115" width="110" height="60" fill="rgba(251,191,36,.08)" stroke="#fbbf24"/>
+          <text x="75" y="141" fill="#fbbf24">🧭</text><text x="75" y="160" fill="#fbbf24">VALUES</text>
+          <rect x="200" y="115" width="110" height="60" fill="rgba(103,232,249,.08)" stroke="#67e8f9"/>
+          <text x="255" y="141" fill="#67e8f9">🔭</text><text x="255" y="160" fill="#67e8f9">VISION</text>
+          <rect x="380" y="45" width="90" height="200" rx="45" fill="rgba(52,211,153,.06)" stroke="#34d399" stroke-dasharray="5 4"/>
+          <text x="425" y="140" fill="#34d399">🚀</text><text x="425" y="158" fill="#34d399">MISSIONS</text>
+          <rect x="550" y="45" width="110" height="60" fill="rgba(52,211,153,.08)" stroke="#34d399"/>
+          <text x="605" y="71" fill="#34d399">MISSION 1</text><text x="605" y="87" fill="#7f93b8" font-size="9">GOALS + SCOPE</text>
+          <rect x="550" y="185" width="110" height="60" fill="rgba(52,211,153,.08)" stroke="#34d399"/>
+          <text x="605" y="211" fill="#34d399">MISSION 2</text><text x="605" y="227" fill="#7f93b8" font-size="9">GOALS + SCOPE</text>
+          <rect x="714" y="45" width="116" height="58" fill="rgba(219,231,255,.06)" stroke="#dbe7ff"/>
+          <text x="772" y="70" fill="#dbe7ff">PLAN +</text><text x="772" y="86" fill="#dbe7ff">SCHEDULE</text>
+          <rect x="714" y="187" width="116" height="58" fill="rgba(219,231,255,.06)" stroke="#dbe7ff"/>
+          <text x="772" y="212" fill="#dbe7ff">REVIEW</text><text x="772" y="228" fill="#7f93b8" font-size="9">ADJUST · REPEAT</text>
+        </g>
+        <text x="430" y="280" text-anchor="middle" font-size="9" fill="#54658a" letter-spacing="2">THE FULL SEQUENCE · COPY THIS FLOW INTO YOUR JOURNAL</text>
+      </svg>
+    </div>
+
+    <div class="gonogo" id="gonogo"></div>
+
+    <button id="launchBtn" disabled>▲ Launch</button>
+    <p class="launch-note" id="launchNote">Launch arms when all stations report GO</p>
+
+    <div class="polepole">
+      <div class="pp-grid">
+        <svg viewBox="0 0 220 150" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="mtn" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#54658a"/><stop offset="100%" stop-color="#141d33"/></linearGradient></defs>
+          <path d="M0 150 L70 40 L92 68 L112 30 L150 78 L220 150 Z" fill="url(#mtn)"/>
+          <path d="M104 45 L112 30 L122 46 Q112 54 104 45Z" fill="#eef4ff"/>
+          <path d="M62 52 L70 40 L79 53 Q70 60 62 52Z" fill="#eef4ff"/>
+          <path class="dashline" d="M30 150 Q60 120 84 110 Q118 96 112 34" fill="none" stroke="#fbbf24" stroke-width="1.6" opacity=".8"/>
+          <g class="climber"><circle cx="66" cy="122" r="4" fill="#fbbf24"/><line x1="66" y1="126" x2="66" y2="134" stroke="#fbbf24" stroke-width="2"/></g>
+          <circle class="heroStar" cx="30" cy="26" r="1.6" fill="#dbe7ff"/>
+          <circle class="heroStar" style="animation-delay:1s" cx="186" cy="34" r="1.8" fill="#dbe7ff"/>
+          <text x="110" y="144" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#9fb2d6" letter-spacing="2">KILIMANJARO · 5,895 M</text>
+        </svg>
+        <div class="pp-txt">
+          <span class="k">/// Final transmission ///</span>
+          Kilimanjaro guides say <em>“Pole, Pole”</em> — slowly, steadily. This template is your map and compass; consistent effort is yours to supply. <em>Life is a marathon, not a sprint.</em>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>CTL MISSION CONTROL · BASED ON NASA MISSION-MANAGEMENT PRINCIPLES · DR. RAHUL RAMACHANDRAN · AD ASTRA</footer>
+
+<!-- ============ LAUNCH OVERLAY ============ -->
+<div id="launchOverlay">
+  <div id="launchScene"></div>
+  <div id="bigCount"></div>
+  <div id="bigRocket">
+    <svg viewBox="0 0 44 130" xmlns="http://www.w3.org/2000/svg">
+      <g class="flame">
+        <path d="M22 92 C12 106 15 118 22 130 C29 118 32 106 22 92Z" fill="#fbbf24"/>
+        <path d="M22 92 C17 102 18 110 22 118 C26 110 27 102 22 92Z" fill="#fff7d6"/>
+      </g>
+      <path d="M22 2 C30 14 32 26 32 40 L32 74 L12 74 L12 40 C12 26 14 14 22 2Z" fill="#dbe7ff"/>
+      <path d="M22 2 C26 14 27 26 27 40 L27 74 L22 74 Z" fill="#b7c8ea"/>
+      <circle cx="22" cy="34" r="6" fill="#0d1426" stroke="#67e8f9" stroke-width="2"/>
+      <path d="M12 56 L2 78 L12 74 Z" fill="#f87171"/>
+      <path d="M32 56 L42 78 L32 74 Z" fill="#ef4444"/>
+      <rect x="14" y="74" width="16" height="10" fill="#7f93b8"/>
+      <path d="M14 84 L12 92 L32 92 L30 84 Z" fill="#54658a"/>
+    </svg>
+  </div>
+  <div id="finale">
+    <h2><span>AD ASTRA</span></h2>
+    <p>May you have success and reach great heights. Guidance set · course plotted · manifest loaded. Now — <b>pole, pole</b> — climb.</p>
+    <div class="fin-actions">
+      <button id="finExport">⬇ Download my mission plan</button>
+      <button id="finReturn">Return to mission control</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= STATE ================= */
+const KEY="ctl-mission-v1";
+const blank={values:[],visions:[],mission:"",goals:[],quads:{goals:[],outcomes:[],limits:[],partners:[]},
+  tasks:[],cadence:"Monthly",progress:0,confidence:50,notes:"",done:{}};
+let S;
+try{S=Object.assign({},blank,JSON.parse(localStorage.getItem(KEY)||"{}"));}
+catch(e){S=Object.assign({},blank);}
+S.quads=Object.assign({},blank.quads,S.quads);
+S.done=S.done||{};
+const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
+
+const PHASES=["values","vision","mission","scope","plan","review"];
+const PHASE_LABEL={values:"T-6 VALUES",vision:"T-5 VISION",mission:"T-4 MISSION",scope:"T-3 SCOPE",plan:"T-2 PLAN",review:"T-1 REVIEW"};
+
+/* ================= STARFIELD ================= */
+const cv=document.getElementById("stars"),cx=cv.getContext("2d");
+let stars=[],W,H;
+function sizeStars(){
+  W=cv.width=innerWidth;H=cv.height=innerHeight;
+  stars=Array.from({length:Math.min(260,W*H/6000)},()=>({
+    x:Math.random()*W,y:Math.random()*H,z:Math.random()*1+0.2,
+    r:Math.random()*1.4+0.3,tw:Math.random()*Math.PI*2}));
+}
+sizeStars();addEventListener("resize",sizeStars);
+let scrollV=0,lastY=scrollY;
+(function draw(t){
+  cx.clearRect(0,0,W,H);
+  const dy=scrollY-lastY;lastY=scrollY;
+  scrollV+=(dy-scrollV)*0.06;
+  for(const s of stars){
+    s.y-=scrollV*s.z*0.35;
+    if(s.y<-4)s.y+=H+8; if(s.y>H+4)s.y-=H+8;
+    const a=0.35+0.65*Math.abs(Math.sin(t/900+s.tw));
+    cx.globalAlpha=a*s.z;
+    cx.fillStyle=s.z>0.85?"#9beafb":"#dbe7ff";
+    cx.beginPath();cx.arc(s.x,s.y,s.r,0,7);cx.fill();
+  }
+  cx.globalAlpha=1;
+  requestAnimationFrame(draw);
+})(0);
+
+/* ================= BOOT ================= */
+const bootLines=[
+  ["CTL MISSION CONTROL v2.0 — SYSTEMS CHECK",""],
+  ["GUIDANCE .............. ","ONLINE","cyan"],
+  ["NAVIGATION ............ ","ONLINE","cyan"],
+  ["TELEMETRY ............. ","ONLINE","cyan"],
+  ["CREW MANIFEST ......... ","YOU","amber"],
+  ["DEDICATION ............ ","FOR SACHI",""],
+  ["ALL SYSTEMS ........... ","GO","cyan"],
+];
+const log=document.getElementById("bootLog");
+let li=0;
+function typeLine(){
+  if(li>=bootLines.length){
+    log.classList.remove("cursor");
+    document.getElementById("bootTitle").classList.add("show");
+    document.getElementById("initBtn").classList.add("show");
+    return;
+  }
+  const[pre,val,cls]=bootLines[li++];
+  const div=document.createElement("div");
+  div.textContent=pre;
+  log.appendChild(div);
+  setTimeout(()=>{
+    if(val){const sp=document.createElement("span");sp.textContent=val;if(cls)sp.className=cls;div.appendChild(sp);}
+    setTimeout(typeLine,110+Math.random()*140);
+  },80);
+}
+setTimeout(typeLine,400);
+document.getElementById("initBtn").addEventListener("click",()=>{
+  document.getElementById("boot").classList.add("gone");
+  startMET();
+});
+setTimeout(()=>document.getElementById("boot").addEventListener("click",e=>{
+  if(e.target.id!=="initBtn"){document.getElementById("boot").classList.add("gone");startMET();}
+}),10000);
+
+/* ================= MET ================= */
+let metStart=null;
+function startMET(){
+  if(metStart)return;metStart=Date.now();
+  setInterval(()=>{
+    const s=Math.floor((Date.now()-metStart)/1000);
+    const h=String(Math.floor(s/3600)).padStart(2,"0"),
+          m=String(Math.floor(s%3600/60)).padStart(2,"0"),
+          ss=String(s%60).padStart(2,"0");
+    document.getElementById("met").textContent=`+${h}:${m}:${ss}`;
+  },1000);
+}
+
+/* ================= TOAST ================= */
+let toastT;
+function toast(msg,bad){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.style.color=bad?"var(--red)":"var(--green)";
+  t.style.borderColor=bad?"rgba(248,113,113,.6)":"rgba(52,211,153,.5)";
+  t.classList.add("show");
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+/* ================= REVEAL + RAIL ================= */
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add("visible");
+}),{threshold:0.12});
+document.querySelectorAll(".frame").forEach(f=>io.observe(f));
+
+const rail=[...document.querySelectorAll("#rail a")];
+const secIO=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){
+    rail.forEach(a=>a.classList.toggle("active",a.dataset.sec===e.target.id));
+  }
+}),{threshold:0.45});
+document.querySelectorAll("section").forEach(s=>secIO.observe(s));
+
+/* ================= PROGRESS ================= */
+function completedCount(){return PHASES.filter(p=>S.done[p]).length;}
+function refreshProgress(){
+  const n=completedCount(),pct=Math.round(n/PHASES.length*100);
+  document.getElementById("fuelFill").style.transform=`scaleX(${pct/100})`;
+  document.getElementById("fuelPct").textContent=pct+"%";
+  const wrap=document.getElementById("rocketWrap");
+  const g=document.getElementById("gantry");
+  if(g.offsetHeight){wrap.style.bottom=(pct/100*(g.offsetHeight-120))+"px";}
+  wrap.classList.toggle("thrust",n>0);
+  rail.forEach(a=>a.classList.toggle("done",!!S.done[a.dataset.sec]));
+  for(let i=1;i<=5;i++){
+    const l=document.getElementById("vl"+i);if(l)l.classList.toggle("on",S.values.length>=i);
+    const gn=document.getElementById("gv"+i);if(gn)gn.classList.toggle("on",S.values.length>=i);
+  }
+  document.querySelectorAll("button.complete").forEach(b=>{
+    const on=!!S.done[b.dataset.phase];
+    b.classList.toggle("done",on);
+    b.textContent=on?"✓ PHASE COMPLETE — TAP TO REOPEN":"◉ MARK PHASE COMPLETE";
+  });
+  renderGoNoGo();
+}
+function renderGoNoGo(){
+  const box=document.getElementById("gonogo");
+  box.innerHTML="";
+  let allGo=true;
+  PHASES.forEach(p=>{
+    const go=!!S.done[p];allGo=allGo&&go;
+    const d=document.createElement("div");
+    d.className="station "+(go?"go":"nogo");
+    d.innerHTML=`<span class="s-name">${PHASE_LABEL[p]}</span><span class="s-status">${go?"GO":"NO-GO"}</span>`;
+    box.appendChild(d);
+  });
+  const btn=document.getElementById("launchBtn");
+  btn.disabled=!allGo;
+  document.getElementById("launchNote").textContent=allGo
+    ?"ALL STATIONS GO · YOU ARE CLEARED FOR LAUNCH"
+    :"LAUNCH ARMS WHEN ALL STATIONS REPORT GO";
+}
+document.querySelectorAll("button.complete").forEach(b=>{
+  b.addEventListener("click",()=>{
+    S.done[b.dataset.phase]=!S.done[b.dataset.phase];
+    save();refreshProgress();
+    if(S.done[b.dataset.phase])toast(PHASE_LABEL[b.dataset.phase]+" — STATION REPORTS GO");
+  });
+});
+
+/* gantry marks */
+(function(){
+  const g=document.getElementById("gantry");
+  ["100 KM","75","50","25","PAD"].forEach((t,i)=>{
+    const m=document.createElement("div");m.className="mark";
+    m.style.top=(i*24+2)+"%";m.innerHTML=`<span>${t}</span>`;g.appendChild(m);
+  });
+})();
+
+/* ================= HELPERS ================= */
+function renderList(el,arr,fmt,onDel){
+  el.innerHTML="";
+  arr.forEach((it,i)=>{
+    const li=document.createElement("li");
+    li.innerHTML=fmt(it);
+    const del=document.createElement("button");
+    del.textContent="✕";del.title="Remove";
+    del.addEventListener("click",()=>{onDel(i);});
+    li.appendChild(del);
+    el.appendChild(li);
+  });
+}
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ================= T-6 VALUES ================= */
+const vInput=document.getElementById("valueInput");
+function renderValues(){
+  const box=document.getElementById("valueChips");
+  box.innerHTML="";
+  S.values.forEach((v,i)=>{
+    const c=document.createElement("div");c.className="chip";
+    c.innerHTML=`<span class="n">0${i+1}</span><span>${esc(v)}</span>`;
+    const del=document.createElement("button");del.textContent="✕";
+    del.addEventListener("click",()=>{S.values.splice(i,1);save();renderValues();});
+    c.appendChild(del);box.appendChild(c);
+  });
+  refreshProgress();
+}
+function addValue(text){
+  const v=(text!==undefined?text:vInput.value).trim();
+  const hint=document.getElementById("valueHint");
+  if(!v)return;
+  if(S.values.length>=5){
+    hint.textContent="⚠ PAYLOAD LIMIT EXCEEDED — MAX 5 CORE VALUES. PRIORITIZE.";
+    hint.classList.add("warn");setTimeout(()=>{hint.classList.remove("warn");
+      hint.textContent="GUIDANCE CAPACITY: MAX 5 VALUES";},2400);
+    return;
+  }
+  S.values.push(v);if(text===undefined)vInput.value="";
+  save();renderValues();
+  toast("CORE VALUE INSTALLED ["+S.values.length+"/5]");
+}
+document.getElementById("valueAdd").addEventListener("click",()=>addValue());
+vInput.addEventListener("keydown",e=>{if(e.key==="Enter")addValue();});
+
+/* ================= T-5 VISION ================= */
+const visInput=document.getElementById("visionInput");
+function renderVisions(){
+  renderList(document.getElementById("visionList"),S.visions,
+    v=>`<span class="txt">${esc(v)}</span>`,
+    i=>{S.visions.splice(i,1);save();renderVisions();});
+}
+function addVision(text){
+  const v=(text!==undefined?text:visInput.value).trim();
+  const hint=document.getElementById("visionHint");
+  if(!v)return;
+  if(S.visions.length>=3){
+    hint.textContent="⚠ TOO MANY TRAJECTORIES — KEEP 1 TO 3. BE REALISTIC.";
+    hint.classList.add("warn");setTimeout(()=>{hint.classList.remove("warn");
+      hint.textContent="TRAJECTORY LIMIT: 1–3 VISION STATEMENTS";},2600);
+    return;
+  }
+  S.visions.push(v);if(text===undefined)visInput.value="";
+  save();renderVisions();
+  toast("COURSE PLOTTED ["+S.visions.length+"/3]");
+}
+document.getElementById("visionAdd").addEventListener("click",()=>addVision());
+visInput.addEventListener("keydown",e=>{if(e.key==="Enter")addVision();});
+
+/* ghost adopt chips */
+document.querySelectorAll(".ghost").forEach(g=>{
+  g.addEventListener("click",()=>{
+    const kind=g.dataset.adopt,txt=g.textContent.trim();
+    if(kind==="values")addValue("I value "+txt);
+    else if(kind==="visions")addVision(txt.charAt(0).toUpperCase()+txt.slice(1));
+  });
+});
+
+/* ================= T-4 MISSION ================= */
+const mInput=document.getElementById("missionInput");
+mInput.addEventListener("input",()=>{S.mission=mInput.value;save();});
+function renderGoals(){
+  renderList(document.getElementById("goalList"),S.goals,
+    g=>`<span class="txt"><b style="color:#fff">${esc(g.what)}</b>${g.why?`\n↳ why: ${esc(g.why)}`:""}</span>`,
+    i=>{S.goals.splice(i,1);save();renderGoals();});
+}
+function addGoal(){
+  const what=document.getElementById("goalInput").value.trim();
+  const why=document.getElementById("purposeInput").value.trim();
+  if(!what)return;
+  S.goals.push({what,why});
+  document.getElementById("goalInput").value="";document.getElementById("purposeInput").value="";
+  save();renderGoals();toast("GOAL LOADED INTO FLIGHT PROGRAM");
+}
+document.getElementById("goalAdd").addEventListener("click",addGoal);
+document.getElementById("purposeInput").addEventListener("keydown",e=>{if(e.key==="Enter")addGoal();});
+
+/* ================= T-3 SCOPE ================= */
+function renderQuad(q){
+  renderList(document.getElementById("quad-"+q),S.quads[q],
+    v=>`<span class="txt">${esc(v)}</span>`,
+    i=>{S.quads[q].splice(i,1);save();renderQuad(q);});
+}
+document.querySelectorAll("[data-quadadd]").forEach(btn=>{
+  const q=btn.dataset.quadadd;
+  const inp=document.querySelector(`input[data-quad="${q}"]`);
+  const add=()=>{const v=inp.value.trim();if(!v)return;S.quads[q].push(v);inp.value="";save();renderQuad(q);};
+  btn.addEventListener("click",add);
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter")add();});
+});
+
+/* ================= T-2 PLAN ================= */
+function renderTasks(){
+  renderList(document.getElementById("taskList"),S.tasks,
+    t=>`<span class="txt">${esc(t.name)}</span>${t.dur?`<span class="dur">${esc(t.dur)}</span>`:""}`,
+    i=>{S.tasks.splice(i,1);save();renderTasks();});
+}
+function addTask(){
+  const name=document.getElementById("taskInput").value.trim();
+  const dur=document.getElementById("taskDur").value.trim();
+  if(!name)return;
+  S.tasks.push({name,dur});
+  document.getElementById("taskInput").value="";document.getElementById("taskDur").value="";
+  save();renderTasks();toast("TASK ADDED TO MANIFEST");
+}
+document.getElementById("taskAdd").addEventListener("click",addTask);
+document.getElementById("taskDur").addEventListener("keydown",e=>{if(e.key==="Enter")addTask();});
+document.getElementById("taskInput").addEventListener("keydown",e=>{if(e.key==="Enter")addTask();});
+
+/* ================= T-1 REVIEW ================= */
+const cad=document.getElementById("cadence"),
+      ps=document.getElementById("progSlider"),cs=document.getElementById("confSlider"),
+      notes=document.getElementById("reviewNotes");
+cad.value=S.cadence||"Monthly";ps.value=S.progress;cs.value=S.confidence;notes.value=S.notes;
+document.getElementById("progOut").textContent=S.progress+"%";
+document.getElementById("confOut").textContent=S.confidence+"%";
+cad.addEventListener("change",()=>{S.cadence=cad.value;save();});
+ps.addEventListener("input",()=>{S.progress=+ps.value;document.getElementById("progOut").textContent=ps.value+"%";save();});
+cs.addEventListener("input",()=>{S.confidence=+cs.value;document.getElementById("confOut").textContent=cs.value+"%";save();});
+notes.addEventListener("input",()=>{S.notes=notes.value;save();});
+
+/* ================= EXPORT ================= */
+function buildPlan(){
+  const L=[];
+  L.push("=====================================================");
+  L.push("  COUNTDOWN TO LIFTOFF — MY MISSION PLAN");
+  L.push("  Based on NASA mission-management principles");
+  L.push("  Template by Dr. Rahul Ramachandran");
+  L.push("=====================================================","");
+  L.push("1. CORE VALUES (max 5, prioritized)");
+  L.push(...(S.values.length?S.values.map((v,i)=>`   ${i+1}. ${v}`):["   (none logged yet)"]),"");
+  L.push("2. VISION STATEMENTS (3–5 year horizon)");
+  L.push(...(S.visions.length?S.visions.map(v=>`   • ${v}`):["   (none logged yet)"]),"");
+  L.push("3. MISSION STATEMENT");
+  L.push("   "+(S.mission||"(none logged yet)"),"");
+  L.push("   GOALS:");
+  L.push(...(S.goals.length?S.goals.map(g=>`   • ${g.what}${g.why?`\n     Purpose — ${g.why}`:""}`):["   (none logged yet)"]),"");
+  L.push("4. SCOPE");
+  const qn={goals:"Refined goals",outcomes:"Outcomes / milestones",limits:"Limitations",partners:"Partners / stakeholders"};
+  for(const q of ["goals","outcomes","limits","partners"]){
+    L.push("   "+qn[q]+":");
+    L.push(...(S.quads[q].length?S.quads[q].map(v=>`   • ${v}`):["   • (none)"]));
+  }
+  L.push("");
+  L.push("5. PLAN — TASK MANIFEST");
+  L.push(...(S.tasks.length?S.tasks.map(t=>`   • ${t.name}${t.dur?` (${t.dur})`:""}`):["   (none logged yet)"]),"");
+  L.push("6. REVIEW");
+  L.push("   Cadence: "+(S.cadence||"—"));
+  L.push("   Mission progress: "+S.progress+"%   Confidence: "+S.confidence+"%");
+  if(S.notes)L.push("   Checkpoint log: "+S.notes);
+  L.push("","-----------------------------------------------------");
+  L.push('  "Pole, Pole" — slowly and steadily. Life is a');
+  L.push("  marathon, not a sprint.  AD ASTRA.");
+  L.push("-----------------------------------------------------");
+  return L.join("\n");
+}
+function exportPlan(){
+  const blob=new Blob([buildPlan()],{type:"text/plain"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="my-mission-plan.txt";
+  document.body.appendChild(a);a.click();a.remove();
+  toast("MISSION PLAN DOWNLINKED");
+}
+document.getElementById("exportBtn").addEventListener("click",exportPlan);
+document.getElementById("finExport").addEventListener("click",exportPlan);
+
+/* ================= LAUNCH ================= */
+const overlay=document.getElementById("launchOverlay");
+(function(){
+  const scene=document.getElementById("launchScene");
+  for(let i=0;i<40;i++){
+    const s=document.createElement("div");s.className="streak";
+    s.style.left=Math.random()*100+"vw";
+    s.style.height=40+Math.random()*120+"px";
+    s.style.animationDelay=(Math.random()*0.7)+"s";
+    s.style.animationDuration=(0.4+Math.random()*0.6)+"s";
+    scene.appendChild(s);
+  }
+})();
+document.getElementById("launchBtn").addEventListener("click",()=>{
+  overlay.classList.add("on");
+  const bc=document.getElementById("bigCount");
+  bc.classList.remove("word");bc.textContent="";
+  document.getElementById("finale").classList.remove("show");
+  let n=10;
+  bc.textContent=n;
+  const iv=setInterval(()=>{
+    n--;
+    if(n>0){bc.textContent=n;
+      if(n<=3){overlay.classList.add("shake","ignition");}
+    }else if(n===0){
+      clearInterval(iv);
+      bc.classList.add("word");bc.textContent="LIFTOFF";
+      overlay.classList.add("flying");
+      setTimeout(()=>{bc.textContent="";},1400);
+      setTimeout(()=>{
+        overlay.classList.remove("shake");
+        document.getElementById("finale").classList.add("show");
+      },3600);
+    }
+  },900);
+});
+document.getElementById("finReturn").addEventListener("click",()=>{
+  overlay.classList.remove("on","shake","ignition","flying");
+  document.getElementById("finale").classList.remove("show");
+});
+
+/* ================= INIT ================= */
+mInput.value=S.mission||"";
+renderValues();renderVisions();renderGoals();renderTasks();
+["goals","outcomes","limits","partners"].forEach(renderQuad);
+refreshProgress();
+addEventListener("resize",refreshProgress);
+})();
+</script>
+</body>
+</html>
